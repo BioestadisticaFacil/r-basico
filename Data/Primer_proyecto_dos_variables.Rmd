@@ -1,0 +1,52 @@
+---
+title: "Primer proyecto de dos variables"
+author: "Bioestadística Fácil"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Primer proyecto con solo dos variables:
+
+## La variable independiente:
+
+La variable independiente o X va a ser en este caso la *Edad*
+
+```{r variable independiente}
+
+x<- c(23,21,22,24,20,25,23,22,21,24)
+```
+
+
+## La variable dependiente:
+
+La variable dependiente o Y va a ser en este caso la *Nota*
+
+```{r variable dependiente}
+
+y<- c(8.5, 9.0, 7.8, 8.2, 9.1, 7.5, 8.9, 7.7, 8.0, 9.3)
+```
+
+
+# Representación gráfica de la nube de puntos de ambas variables
+
+```{r representacion nube de puntos}
+
+plot (x, y)
+
+```
+
+
+
+
+
+
+
+
+
+
+
