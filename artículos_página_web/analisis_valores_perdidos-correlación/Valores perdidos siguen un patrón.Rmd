@@ -1,0 +1,178 @@
+---
+title: "Tratamiento de valores perdidos I"
+author: "Bioestadística Fácil"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true              # Activa la tabla de contenidos
+    toc_float: true        # Hace que el índice sea flotante
+    toc_depth: 2           # Número de niveles a mostrar (1=apartados, 2=subapartados)
+    number_sections: true  # Numera automáticamente secciones y subsecciones
+    theme: flatly          # Opcional: tema Bootstrap para el HTML
+    highlight: tango       # Opcional: estilo de resaltado de código
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Tratamiento de valores perdidos que podrían seguir un patrón
+
+## Análisis de los datos
+
+Primero tenemos que leer el .csv. Se va a hacer de tres formas diferentes. En los tres primeros apartados los valores NA no están escritos en el csv como tales, aparecen espacios en blanco. En el cuarto apartado el csv contiene valores NA sustituyendo a los datos faltantes.
+
+### Con la función propia de R
+
+```{r lectura con función propia de R}
+
+df_1 <- read.csv("ejemplo_missing.csv", stringsAsFactors = FALSE)
+
+head(df,10)
+
+```
+
+### Con la función del paquete "readr"
+
+```{r con el paquete readr}
+
+library(readr)
+
+df_2 <- read_csv("ejemplo_missing.csv", show_col_types = FALSE)
+
+head(df_2, 10)
+
+
+```
+
+
+### Con la función genérica:
+
+```{r función genérica de lectura}
+
+df_3<- read.table("ejemplo_missing.csv", sep= ",", header =TRUE, stringsAsFactors = FALSE)
+
+head (df_3, 10)
+
+```
+
+
+### Lectura del otro csv con los valores NA ya escritos:
+
+```{r}
+df<- read.csv("ejemplo_missing_explicit_NA.csv", stringsAsFactors= FALSE, na.strings= "NA") #para que trate a los NA como valores faltantes
+
+head(df, 10)
+```
+
+
+Ahora hay que convertir en factores las variables "SituacionLaboral" y "RecibeSubsidio"
+
+
+```{r categorizar variables}
+
+df$SituacionLaboral <- factor(df$SituacionLaboral,
+                              levels = c("Desempleado", "Empleado"))
+
+df$RecibeSubsidio <- factor(df$RecibeSubsidio,
+                            levels = c("No", "Sí"))
+
+
+```
+
+
+## Dicotomización de las variables objetivo
+
+Se dicotomizan las variables objetivo, es decir, aquellas que tienen NAs, para poder trabajar con estos valores. Aquí tenemos que crear primero un dataframe con las variables de interés y después crear dos columnas adicionales. También se podría trabajar sin crear otro data frame.
+
+
+```{r nuevo data frame}
+
+
+df_laboral <- df[, c("SituacionLaboral", "IngresoMensual", "RecibeSubsidio")]
+
+# Revisar el nuevo dataframe. Observo que me siguen saliendo las variables que convertí en categóricas.
+str(df_laboral)
+summary(df_laboral)
+head(df_laboral)
+
+
+```
+
+
+## Nuevo dataframe y adición de columnas dicotomizadas
+
+Se van a añadir ahora dos columnas nuevas, una relacionada con los ingresos mensiuales y otra relacionada con la columna "RecibeSubsidio". Estas dos columnas van a mostrar si en la columna asociada falta un valor. Si falta se computará como 0 y si no falta se computará como 1.
+
+
+```{r creación de dos columnas nuevas}
+
+# Crear columna indicadora para IngresoMensual
+
+df_laboral$IngresoMensual_ind <- ifelse(is.na(df_laboral$IngresoMensual), 0, 1)# en estos valores se devuelve true/false, computados como 0 y 1 respectivamente.
+
+# Crear columna indicadora para RecibeSubsidio
+
+df_laboral$RecibeSubsidio_ind <- ifelse(is.na(df_laboral$RecibeSubsidio), 0, 1)
+
+# Revisar el resultado
+head(df_laboral)
+
+
+
+```
+
+
+## Análisis sobre la existencia de un patrón en los datos faltantes. 
+
+Finalmente se analiza si existe un patrón en los valores perdidos en las dos variables debido a la "deseabilidad social"
+
+Se va a realizar la prueba de las correlaciones dicotomizadas entre las dos variables:
+
+```{r correlacion de Pearson}
+
+corr_matrix<- cor(df_laboral$IngresoMensual_ind, df_laboral$RecibeSubsidio_ind) #da un valor de 0.76
+
+
+```
+
+
+Ese valor de 0.76 indica una asociación positiva fuerte entre las dos variables dicotomizadas.
+
+En análisis de datos faltantes, esto sugiere que las omisiones no son aleatorias (MNAR) y que estas dos variables comparten un patrón de falta de respuesta.
+
+## Análisis visual
+
+Se va a hacer un "Heatmap" para visualizar la correlación entre variables. Realmente como hay dos variables solo aparecerá un color.
+
+```{r}
+library(ggplot2)
+library(reshape2)  # para transformar la matriz a formato largo
+
+# Transformar la matriz de correlación a formato largo
+corr_long <- melt(corr_matrix)
+
+# Graficar
+ggplot(corr_long, aes("IngresoMensual_ind", "RecibeSubsidio_ind", fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "white", high = "blue", mid = "lightblue",
+                       midpoint = 0.5, limit = c(0,1), name = "Correlación") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 5) +
+  theme_minimal() +
+  ggtitle("Heatmap de correlación entre variables dicotomizadas") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
