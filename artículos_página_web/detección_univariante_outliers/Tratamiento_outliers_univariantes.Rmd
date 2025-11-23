@@ -1,0 +1,132 @@
+---
+title: "Tratamiento de outliers univariantes"
+author: "Bioestadística Fácil"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true        # activa la tabla de contenidos
+    toc_float: true  # hace que el índice sea flotante
+    number_sections: true  # numera secciones y subapartados
+    toc_depth: 2  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Tratamiento de los valores outliers univariantes
+
+## Detección de outliers
+
+
+```{r lectura del archivo de datos}
+
+datos <- read.table("datos_sujetos.csv", 
+                    header = TRUE, 
+                    sep = ",", 
+                    dec = ".", 
+                    stringsAsFactors = FALSE)
+
+head(datos)
+
+
+```
+
+Vamos a analizar un poco más los datos con algunos estadísticos sencillos:
+
+```{r análisis estadístico descriptivo básico}
+
+summary(datos)
+
+```
+
+
+Aunque esta información no es determinante sí nos hace sospechar de que puede existir un outlier en la variable sueldo_mensual: el valor máximo está muy lejos del Q3 y la media es muy superior a la mediana. La media es muy sensible a los valores anómalos mientras que la mediana es más robusta.
+
+## Análisis por el método de los valores estandarizados
+
+Se van a considerar atípicos, ya que estamos en una muestra pequeña, aquellos valores de la variable sueldo_mensual que al transformarse en estandarizados superen 2.5 desviaciones típicas.
+
+
+```{r estandarizar la variable sueldo_mensual}
+
+z_sueldo <- scale(datos$sueldo_mensual)
+
+z_sueldo #de aquí obtenemos una matriz con los valores de la variable sueldo_mensual estandarizados
+
+```
+
+Ahora queremos saber qué valor es el otulier:
+
+```{r valor outlier}
+
+outliers <- datos$sueldo_mensual[abs(z_sueldo) > 2.5]#se pone en valor absoluto para evitar valores negativos en la desviación
+outliers
+
+```
+
+En vez de obtenerlo como matriz lo obtenemos como vector numérico
+
+```{r}
+
+z <- as.numeric(scale(datos$sueldo_mensual))# lo saca como vector
+
+z
+```
+
+
+Se va a averiguar la fila en la que aparece ese outlier
+
+```{r}
+
+datos[abs(z) > 2.5, ] # en el cuarto sujeto aparece el outlier
+```
+
+## Se realiza una gráfica de visualización de outliers. 
+
+Los valores que se utilizan son los estandarizados en la coordenada y, y el número de sujeto para la coordenada X
+
+```{r}
+
+# Identificar outliers con |z| > 2.5
+outliers <- which(abs(z_sueldo) > 2.5)
+
+# Crear gráfico
+plot(1:nrow(datos), z_sueldo, type="b", pch=19,
+     xlab="Número de sujeto", ylab="Sueldo mensual (z-score)",
+     main="Detección de outliers mediante z-scores")
+
+# Líneas límite
+abline(h=2.5, lty=2)
+abline(h=-2.5, lty=2)
+
+# Etiquetar outliers
+text(outliers, z_sueldo[outliers], labels=datos$sujeto[outliers], pos=4) #se pone la posición 4 para que la etiqueta aparezca a la derecha y se pueda visualizar
+
+```
+
+
+
+
+# Consideración de normalidad en la distribución y prueba de Grubbs
+
+Se va a utilizar una técnica más precisa para la detección de outliers.
+En este caso la hipótesis nula, H0: no hay valores outliers
+             la hipótesis alternativa, H1: sí hay valores outliers
+             
+             
+```{r prueba de grubbs}
+
+library( outliers)
+test<- grubbs.test(datos$sueldo_mensual)
+test
+
+```
+
+Como se puede ver en el resultado, el valor de 15000 es un outlier.
+
+
+
+
+
+
